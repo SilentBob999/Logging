@@ -4,6 +4,7 @@
         LogName  = @{Required = $true; Type = [string]; Default = $null}
         Source   = @{Required = $true; Type = [string]; Default = $null}
         Level    = @{Required = $false; Type = [string]; Default = $Logging.Level}
+        Format   = @{Required = $false; Type = [string]; Default = $Logging.Format}
     }
     Logger = {
         param(
@@ -25,18 +26,26 @@
             {$_ -lt 30}                { $Params['EntryType'] = 'Information' }
         }
 
-        $Params['Message'] = $Log.Message
+        $Params['Message'] = Replace-Token -String $Configuration.Format -Source $Log
 
         if ($Log.ExecInfo) {
             $ExceptionFormat = "{0}`n" +
                                "{1}`n" +
                                "+     CategoryInfo          : {2}`n" +
-                               "+     FullyQualifiedErrorId : {3}`n"
+                               "+     FullyQualifiedErrorId : {3}`n" +
+                               "`n`n" +
+                               "ScriptStackTrace :`n" +
+                               "{4}"+
+                               "`n`n" +
+                               "Details :" +
+                               "{5}"
 
             $ExceptionFields = @($Log.ExecInfo.Exception.Message,
                                $Log.ExecInfo.InvocationInfo.PositionMessage,
                                $Log.ExecInfo.CategoryInfo.ToString(),
-                               $Log.ExecInfo.FullyQualifiedErrorId)
+                               $Log.ExecInfo.FullyQualifiedErrorId,
+                               $Log.ExecInfo.ScriptStackTrace,
+                               ($Log.ExecInfo.Exception | format-list -force | Out-String))
 
             if ( [string]::IsNullOrEmpty($Params['Message']) ){
                 $Params['Message'] = $ExceptionFormat -f $ExceptionFields

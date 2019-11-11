@@ -47,22 +47,33 @@ Function Write-Log {
     [CmdletBinding()]
     param(
         [Parameter(Position = 2,
+            ParameterSetName='Message',
             Mandatory = $true)]
         [string] $Message,
         [Parameter(Position = 3,
+            ParameterSetName='Message',
             Mandatory = $false)]
         [array] $Arguments,
         [Parameter(Position = 4,
+            ParameterSetName='Message',
             Mandatory = $false)]
         [object] $Body = $null,
         [Parameter(Position = 5,
+            ParameterSetName='Message',
             Mandatory = $false)]
+        [Parameter(Position = 2,
+            ParameterSetName='ExceptionOnly',
+            Mandatory = $true)]
         [System.Management.Automation.ErrorRecord] $ExceptionInfo = $null
     )
 
     DynamicParam {
         New-LoggingDynamicParam -Level -Mandatory $false -Name "Level"
-        $PSBoundParameters["Level"] = "INFO"
+        if ($null -eq $ExceptionInfo) {
+            $PSBoundParameters["Level"] = "INFO"
+        } else {
+            $PSBoundParameters["Level"] = "ERROR"
+        }
     }
 
     End {
