@@ -69,7 +69,11 @@ Function Write-Log {
 
     DynamicParam {
         New-LoggingDynamicParam -Level -Mandatory $false -Name "Level"
-        $PSBoundParameters["Level"] = "INFO"
+        if ($null -eq $ExceptionInfo) {
+            $PSBoundParameters["Level"] = "INFO"
+        } else {
+            $PSBoundParameters["Level"] = "ERROR"
+        }
     }
 
     End {
