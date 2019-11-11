@@ -33,6 +33,10 @@
         )
 
         try {
+            if ( [string]::IsNullOrEmpty($log.message) -and ![String]::IsNullOrWhiteSpace($Log.ExecInfo)){
+               $log.message = $Log.ExecInfo.Exception.Message
+            }
+
             $logText = Replace-Token -String $Configuration.Format -Source $Log
 
             if (![String]::IsNullOrWhiteSpace($Log.ExecInfo)) {
