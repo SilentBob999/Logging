@@ -4,6 +4,7 @@
         LogName  = @{Required = $true; Type = [string]; Default = $null}
         Source   = @{Required = $true; Type = [string]; Default = $null}
         Level    = @{Required = $false; Type = [string]; Default = $Logging.Level}
+        Format   = @{Required = $false; Type = [string]; Default = $Logging.Format}
     }
     Logger = {
         param(
@@ -25,7 +26,7 @@
             {$_ -lt 30}                { $Params['EntryType'] = 'Information' }
         }
 
-        $Params['Message'] = $Log.Message
+        $Params['Message'] = Replace-Token -String $Configuration.Format -Source $Log
 
         if ($Log.ExecInfo) {
             $ExceptionFormat = "{0}`n" +
