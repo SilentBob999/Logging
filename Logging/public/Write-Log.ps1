@@ -55,8 +55,8 @@ Function Write-Log {
             Mandatory = $false)]
         [array] $Arguments,
         [Parameter(Position = 4,
-        ParameterSetName='Message',
-        Mandatory = $false)]
+            ParameterSetName='Message',
+            Mandatory = $false)]
         [Parameter(Position = 4,
             ParameterSetName='ExceptionOnly',
             Mandatory = $false)]
