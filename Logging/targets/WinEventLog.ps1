@@ -33,11 +33,13 @@
                                "{1}`n" +
                                "+     CategoryInfo          : {2}`n" +
                                "+     FullyQualifiedErrorId : {3}`n" +
+                               "+     Details message       : {6}`n" +
+                               "+     RecommendedAction     : {7}`n" +
                                "`n`n" +
                                "ScriptStackTrace :`n" +
                                "{4}"+
                                "`n`n" +
-                               "Details :" +
+                               "Exception details :" +
                                "{5}"
 
             $ExceptionFields = @($Log.ExecInfo.Exception.Message,
@@ -45,7 +47,9 @@
                                $Log.ExecInfo.CategoryInfo.ToString(),
                                $Log.ExecInfo.FullyQualifiedErrorId,
                                $Log.ExecInfo.ScriptStackTrace,
-                               ($Log.ExecInfo.Exception | format-list -force | Out-String))
+                               ($Log.ExecInfo.Exception | format-list -force | Out-String),
+                               $Log.ExecInfo.ErrorDetails.message,
+                               $Log.ExecInfo.ErrorDetails.RecommendedAction)
 
             if ( [string]::IsNullOrEmpty($Params['Message']) ){
                 $Params['Message'] = $ExceptionFormat -f $ExceptionFields
