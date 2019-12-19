@@ -85,6 +85,9 @@ Function Write-Log {
         if ($PSBoundParameters.ContainsKey('Arguments')) {
             $messageText = $messageText -f $Arguments
         }
+        if ($messageText.Length -gt 30000) {
+            $messageText = $messageText.subString(0, [System.Math]::Min(30000, $messageText.Length)) + "`n(truncated)"
+        }
 
         $levelNumber = Get-LevelNumber -Level $PSBoundParameters.Level
         $invocationInfo = (Get-PSCallStack)[$Script:Logging.CallerScope]
