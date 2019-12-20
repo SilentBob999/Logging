@@ -67,7 +67,10 @@ Function Write-Log {
         [Parameter(Position = 2,
             ParameterSetName='ExceptionOnly',
             Mandatory = $true)]
-        [System.Management.Automation.ErrorRecord] $ExceptionInfo = $null
+        [System.Management.Automation.ErrorRecord] $ExceptionInfo = $null,
+        [Parameter(Mandatory = $false)]
+        [alias('bscope')]
+        [int]$BumpCallerScope=0
     )
 
     DynamicParam {
@@ -90,7 +93,7 @@ Function Write-Log {
         }
 
         $levelNumber = Get-LevelNumber -Level $PSBoundParameters.Level
-        $invocationInfo = (Get-PSCallStack)[$Script:Logging.CallerScope]
+        $invocationInfo = (Get-PSCallStack)[$( $Script:Logging.CallerScope + $BumpCallerScope )]
 
         # Split-Path throws an exception if called with a -Path that is null or empty.
         [string] $fileName = [string]::Empty
