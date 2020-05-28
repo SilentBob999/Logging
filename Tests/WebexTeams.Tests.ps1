@@ -8,35 +8,35 @@ Import-Module $ModuleManifestPath -Force
 $TargetFile = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.ps1', '.ps1'
 $TargetImplementationPath = '{0}\..\Logging\targets\{1}' -f $PSScriptRoot, $TargetFile
 
-Describe -Tags Targets, TargetTeams 'Teams target' {
+Describe -Tags Targets, TargetWebexTeams 'WebexTeams target' {
     It 'should be available in the module' {
         $Targets = Get-LoggingAvailableTarget
-        $Targets.Teams | Should Not BeNullOrEmpty
+        $Targets.WebexTeams | Should Not BeNullOrEmpty
     }
 
     It 'should have two required parameters' {
         $Targets = Get-LoggingAvailableTarget
-        $Targets.Teams.ParamsRequired | Should Be @('WebHook')
+        $Targets.WebexTeams.ParamsRequired | Should Be @('BotToken', 'RoomID')
     }
 
-    It 'should call Invoke-RestMethod' {
+    It 'should call Invoke-RestMethod' -Skip {
         Mock Invoke-RestMethod -Verifiable
 
         $Module = . $TargetImplementationPath
 
-        $Message = [hashtable] @{
+        $Log = [hashtable] @{
             level   = 'ERROR'
             levelno = 40
-            message = 'Hello, Teams!'
+            message = 'Hello, WebexTeams!'
         }
 
         $Configuration = @{
-            WebHook = 'https://office.microsoft.com'
-            Details = $true
-            Colors = $Module.Configuration.Colors.Default
+            BotToken = 'SOMEINVALIDTOKEN'
+            RoomID = 'SOMEINVALIDROOMID'
+            Icons = @{}
         }
 
-        & $Module.Logger $Message $Configuration
+        & $Module.Logger $Log $Configuration
 
         Assert-MockCalled -CommandName 'Invoke-RestMethod' -Times 1 -Exactly
     }

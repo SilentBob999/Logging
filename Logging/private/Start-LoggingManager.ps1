@@ -55,9 +55,11 @@ function Start-LoggingManager {
                             Invoke-Command -ScriptBlock $Logger -ArgumentList @($Log, $TargetConfiguration)
                         }
                     }
-                } catch {
+                }
+                catch {
                     $ParentHost.UI.WriteErrorLine($_)
-                } finally {
+                }
+                finally {
                     $ParentHost.NotifyEndApplication()
                 }
             }
@@ -70,22 +72,22 @@ function Start-LoggingManager {
 
     #region Handle Module Removal
     $OnRemoval = {
-        $Script:LoggingEventQueue.CompleteAdding()
-        $Script:LoggingEventQueue.Dispose()
+        $Module = Get-Module Logging
 
-        [void] $Script:LoggingRunspace.Powershell.EndInvoke($LoggingRunspace.Handle)
-        [void] $Script:LoggingRunspace.Powershell.Dispose()
-
-        Remove-Variable Logging -Scope Script -Force
-        Remove-Variable Defaults -Scope Script -Force
-        Remove-Variable LevelNames -Scope Script -Force
-        Remove-Variable LoggingRunspace -Scope Script -Force
-        Remove-Variable LoggingEventQueue -Scope Script -Force
+        if ($Module) {
+            $Module.Invoke({
+                Wait-Logging
+                Stop-LoggingManager
+            })
+        }
 
         [System.GC]::Collect()
     }
 
+    # This scriptblock would be called within the module scope
     $ExecutionContext.SessionState.Module.OnRemove += $OnRemoval
-    Register-EngineEvent -SourceIdentifier ([System.Management.Automation.PsEngineEvent]::Exiting) -Action $OnRemoval
+
+    # This scriptblock would be called within the global scope and wouldn't have access to internal module variables and functions that we need
+    $Script:LoggingRunspace.EngineEventJob = Register-EngineEvent -SourceIdentifier ([System.Management.Automation.PsEngineEvent]::Exiting) -Action $OnRemoval
     #endregion Handle Module Removal
 }
