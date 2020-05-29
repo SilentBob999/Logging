@@ -9,7 +9,7 @@ function Stop-LoggingManager {
 
     $ExecutionContext.SessionState.Module.OnRemove = $null
     Get-EventSubscriber | ForEach-Object {
-        Write-Host "Current Action.Id $($_.Action.Id); Looking for id: $($Script:LoggingRunspace.EngineEventJob.Id)"
+        Write-Verbose "Current Action.Id $($_.Action.Id); Looking for id: $($Script:LoggingRunspace.EngineEventJob.Id)"
         $_
     } | Where-Object { $_.Action.Id -eq $Script:LoggingRunspace.EngineEventJob.Id } | Unregister-Event
 
