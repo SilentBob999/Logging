@@ -40,6 +40,9 @@
             $logText = Replace-Token -String $Configuration.Format -Source $Log
 
             if (![String]::IsNullOrWhiteSpace($Log.ExecInfo)) {
+                if ($logText -notlike "*$($Log.ExecInfo.Exception.Message)*" ) {
+                    $logText += "`n" + $Log.ExecInfo.Exception.Message
+                }
                 $logText += "`n" + $Log.ExecInfo.InvocationInfo.PositionMessage
             }
 

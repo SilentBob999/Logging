@@ -23,6 +23,13 @@
 
         $Text = Replace-Token -String $Configuration.Format -Source $Log
 
+        if (![String]::IsNullOrWhiteSpace($Log.ExecInfo)) {
+            if ($Text -notlike "*$($Log.ExecInfo.Exception.Message)*" ) {
+                $Text += "`n" + $Log.ExecInfo.Exception.Message
+            }
+            $Text += "`n" + $Log.ExecInfo.InvocationInfo.PositionMessage
+        }
+
         $Params = @{
             Append      = $Configuration.Append
             FilePath    = Replace-Token -String $Configuration.Path -Source $Log
