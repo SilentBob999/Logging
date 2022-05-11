@@ -57,7 +57,7 @@ Function Write-Log {
         [Parameter(Position = 4,
             ParameterSetName='Message',
             Mandatory = $false)]
-        [Parameter(Position = 4,
+        [Parameter(Position = 3,
             ParameterSetName='ExceptionOnly',
             Mandatory = $false)]
         [object] $Body = $null,
@@ -70,7 +70,8 @@ Function Write-Log {
         [System.Management.Automation.ErrorRecord] $ExceptionInfo = $null,
         [Parameter(Mandatory = $false)]
         [alias('bscope')]
-        [int]$BumpCallerScope=0
+        [int]$BumpCallerScope=0,
+        [System.ConsoleColor]$ForegroundColor
     )
 
     DynamicParam {
@@ -114,6 +115,7 @@ Function Write-Log {
             body         = $Body
             execinfo     = $ExceptionInfo
             pid          = $PID
+            ForegroundColor = $ForegroundColor
         }
 
         #This variable is initiated via Start-LoggingManager
