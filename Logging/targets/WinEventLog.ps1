@@ -26,7 +26,7 @@
             {$_ -lt 30}                { $Params['EntryType'] = 'Information' }
         }
 
-        $Params['Message'] = Replace-Token -String $Configuration.Format -Source $Log
+        $Params['Message'] = Format-Pattern -Pattern $Configuration.Format -Source $Log
 
         if ($Log.ExecInfo) {
             $ExceptionFormat = "{0}`n" +
