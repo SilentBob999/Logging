@@ -111,17 +111,13 @@ Function Write-Log {
             pathname     = $invocationInfo.ScriptName
             filename     = $fileName
             caller       = $invocationInfo.Command
-            message      = [string] $Message
+            message      = [string] $messageText
             rawmessage   = [string] $Message
             body         = $Body
             execinfo     = $ExceptionInfo
             pid          = $PID
+            args         = $Arguments
             ForegroundColor = $ForegroundColor
-        }
-
-        if ($PSBoundParameters.ContainsKey('Arguments')) {
-            $logMessage["message"] = [string] $Message -f $Arguments
-            $logMessage["args"] = $Arguments
         }
 
         #This variable is initiated via Start-LoggingManager
