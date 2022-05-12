@@ -31,7 +31,7 @@ function Set-LoggingVariables {
         Level       = $LevelNames[$LevelNames['NOTSET']]
         LevelNo     = $LevelNames['NOTSET']
         Format      = '[%{timestamp:+%Y-%m-%d %T%Z}] [%{level:-7}] %{message}'
-        Timestamp   = '%Y-%m-%dT%T%Z'
+        Timestamp   = '%Y-%m-%d %T%Z'
         CallerScope = 1
     }
 
@@ -41,7 +41,7 @@ function Set-LoggingVariables {
         Format         = $Defaults.Format
         CallerScope    = $Defaults.CallerScope
         CustomTargets  = [String]::Empty
-        Targets        = ([System.Collections.Concurrent.ConcurrentDictionary[string, hashtable]]::new())
-        EnabledTargets = ([System.Collections.Concurrent.ConcurrentDictionary[string, hashtable]]::new())
+        Targets        = ([System.Collections.Concurrent.ConcurrentDictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase))
+        EnabledTargets = ([System.Collections.Concurrent.ConcurrentDictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase))
     }))
 }

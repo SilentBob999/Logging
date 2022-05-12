@@ -1,2 +1,0 @@
-- [FIX] Fix startup race condition (#100) (@Tadas)
-- [FIX] NotifyBeginApplication/NotifyEndApplication calls not needed (#99)

@@ -1,12 +1,52 @@
 # CHANGELOG
 
-## 4.3.2 (2020-05-28)
+## 4.8.5 (2022-03-23)
 
+
+
+## 4.8.3 (2021-10-06)
+
+
+
+## 4.8.2 (2021-03-15)
+
+
+
+## 4.8.1 (2021-02-18)
+
+
+
+## 4.8.0 (2021-02-11)
+
+
+
+## 4.7.1 (2021-02-11)
+
+
+- [ADD] Teams target now support additional body types for adaptive cards (@jangins101)
+- [FIX] Refactored Teams target (@jangins101)
+- [FIX] Removed formatting timestamp on log event creation, this caused lost of milliseconds later on
+
+## 4.5.0 (2020-10-22)
+
+
+- [ADD] Teams target now support additional body types for adaptive cards (@jangins101)
+- [FIX] Refactored Teams target (@jangins101)
+- [FIX] Removed formatting timestamp on log event creation, this caused lost of milliseconds later on
+
+## 4.4.0 (2020-06-17)
+
+- [FIX] NotifyBeginApplication/NotifyEndApplication calls not needed (#99)
+- [FIX] Fix startup race condition (#100) (@Tadas)
+- [FIX] Fixed an issue in AzureLogAnalytics target (#102) (@Glober777)
+- [FIX] Resolve relative Path in File target (#103) (@Tadas)
+- [FIX] Target name is case insensitive (#106) (@Tadas)
+
+## 4.3.2 (2020-05-28)
 
 - [FIX] SEQ: fix url when ApiKey is used (#96) (@gahujipo)
 
 ## 4.3.1 (2020-05-28)
-
 
 - [NEW] added target for Azure Log Analytics Workspace (thx to @manualbashing)
 - [NEW] added target for Webex Teams (thx to @itshorty)
@@ -15,24 +55,16 @@
 
 ## 4.2.13 (2020-02-25)
 
-
-
 ## 4.2.12 (2019-11-08)
 
-
-
 ## 4.2.11 (2019-09-23)
-
 
 - [FIX] Closed issue #66 where messages are lost on Powershell ISE
 - [MOD] Decreased `Wait-Logging` timeout from 5 minutes to 30 seconds
 
 ## 4.2.7 (2019-09-19)
 
-
-
 ## 4.2.6 (2019-09-13)
-
 
 In this release we worked out an issue about setting default
 level or formatting was not honored by the already configured
@@ -42,8 +74,6 @@ to targets (#68)
 Thanks to: @ZamElek
 
 ## 4.2.3 (2019-08-27)
-
-
 
 ## 4.2.2 (2019-08-05)
 
@@ -75,7 +105,6 @@ It should improve logging performance to a new level thanks to the amazing work 
 - [NEW] Module catalog generation on build
 - [FIX] Filename token (thx to @lookcloser)
 - [MOD] Code cleanup
-
 
 ## 2.10.0 (2019-04-04)
 
@@ -160,26 +189,6 @@ It should improve logging performance to a new level thanks to the amazing work 
 - Moved to psake build tool
 - Moved to platyps doc generation tool
 - Major folder structure change
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -103,19 +103,25 @@ Function Write-Log {
         }
 
         $logMessage = [hashtable] @{
-            timestamp    = Get-Date -UFormat $Defaults.Timestamp
-            timestamputc = Get-Date ([datetime]::UtcNow) -UFormat $Defaults.Timestamp
+            timestamp    = [datetime]::now
+            timestamputc = [datetime]::UtcNow
             level        = Get-LevelName -Level $levelNumber
             levelno      = $levelNumber
             lineno       = $invocationInfo.ScriptLineNumber
             pathname     = $invocationInfo.ScriptName
             filename     = $fileName
             caller       = $invocationInfo.Command
-            message      = $messageText
+            message      = [string] $Message
+            rawmessage   = [string] $Message
             body         = $Body
             execinfo     = $ExceptionInfo
             pid          = $PID
             ForegroundColor = $ForegroundColor
+        }
+
+        if ($PSBoundParameters.ContainsKey('Arguments')) {
+            $logMessage["message"] = [string] $Message -f $Arguments
+            $logMessage["args"] = $Arguments
         }
 
         #This variable is initiated via Start-LoggingManager
