@@ -43,12 +43,14 @@
 
             $mtx = New-Object System.Threading.Mutex($false, 'ConsoleMtx')
             [void] $mtx.WaitOne()
-
-            if ($Configuration.ColorMapping.ContainsKey($Log.Level)) {
-                $ParentHost.UI.WriteLine($Configuration.ColorMapping[$Log.Level], $ParentHost.UI.RawUI.BackgroundColor, $logText)
-            }
-            else {
-                $ParentHost.UI.WriteLine($logText)
+            if ($null -ne $Log.ForegroundColor) {
+                $ParentHost.UI.WriteLine( $Log.ForegroundColor, $ParentHost.UI.RawUI.BackgroundColor, $logText)
+            } else {
+                if ($Configuration.ColorMapping.ContainsKey($Log.Level)) {
+                    $ParentHost.UI.WriteLine($Configuration.ColorMapping[$Log.Level], $ParentHost.UI.RawUI.BackgroundColor, $logText)
+                } else {
+                    $ParentHost.UI.WriteLine($logText)
+                }
             }
 
             [void] $mtx.ReleaseMutex()
