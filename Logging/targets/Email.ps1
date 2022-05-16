@@ -11,7 +11,7 @@
         Port           = @{Required = $false; Type = [int]; Default = 25 }
         UseSsl         = @{Required = $false; Type = [bool]; Default = $false }
         Format         = @{Required = $false; Type = [string]; Default = $Logging.Format }
-        PrintException = @{Required = $false; Type = [bool]; Default = $false }
+        PrintException = @{Required = $false; Type = [bool]; Default = $true }
     }
     Logger        = {
         param(
@@ -21,7 +21,7 @@
 
         $Body = '<h3>{0}</h3>' -f (Format-Pattern -Pattern $Configuration.Format -Source $Log)
 
-        if (![String]::IsNullOrWhiteSpace($Log.ExecInfo)) {
+        if (![String]::IsNullOrWhiteSpace($Log.ExecInfo) -and $Configuration.PrintException) {
             $ExceptionFormat = "{0}`n" +
                                "{1}`n" +
                                "+     CategoryInfo          : {2}`n" +

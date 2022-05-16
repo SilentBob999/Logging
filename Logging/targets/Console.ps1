@@ -34,11 +34,20 @@
         )
 
         try {
+            if ( [string]::IsNullOrEmpty($log.message) -and ![String]::IsNullOrWhiteSpace($Log.ExecInfo)){
+                $log.message = $Log.ExecInfo.Exception.Message
+             }
+
             $logText = Format-Pattern -Pattern $Configuration.Format -Source $Log
 
             if (![String]::IsNullOrWhiteSpace($Log.ExecInfo) -and $Configuration.PrintException) {
-                $logText += "`n{0}" -f $Log.ExecInfo.Exception.Message
-                $logText += "`n{0}" -f (($Log.ExecInfo.ScriptStackTrace -split "`r`n" | %{"`t{0}" -f $_}) -join "`n")
+                if ($logText -notlike "*$($Log.ExecInfo.Exception.Message)*" ) {
+                    $logText += "`n{0}" -f $Log.ExecInfo.Exception.Message
+                }
+                $logText += "`n{0}" -f (($Log.ExecInfo.InvocationInfo.PositionMessage -split "`r`n" | %{"{0}" -f $_} )[1..2]  -join "`n")
+                $logText += "`n  +`tCategoryInfo          : {0}" -f $Log.ExecInfo.CategoryInfo.ToString()
+                $logText += "`n  +`tFullyQualifiedErrorId : {0}" -f $Log.ExecInfo.FullyQualifiedErrorId
+                $logText += "`n{0}" -f (($Log.ExecInfo.ScriptStackTrace -split "`r`n" | %{"    +`t{0}" -f $_}) -join "`n")
             }
 
             $mtx = New-Object System.Threading.Mutex($false, 'ConsoleMtx')

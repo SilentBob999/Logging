@@ -151,15 +151,13 @@
         $Text = Format-Pattern -Pattern $Configuration.Format -Source $Log
 
         if (![String]::IsNullOrWhiteSpace($Log.ExecInfo) -and $Configuration.PrintException) {
-            $Text += "`n{0}" -f $Log.ExecInfo.Exception.Message
-            $Text += "`n{0}" -f (($Log.ExecInfo.ScriptStackTrace -split "`r`n" | % { "`t{0}" -f $_ }) -join "`n")
-        }
-
-        if (![String]::IsNullOrWhiteSpace($Log.ExecInfo)) {
             if ($Text -notlike "*$($Log.ExecInfo.Exception.Message)*" ) {
-                $Text += "`n" + $Log.ExecInfo.Exception.Message
+                $Text += "`n{0}" -f $Log.ExecInfo.Exception.Message
             }
-            $Text += "`n" + $Log.ExecInfo.InvocationInfo.PositionMessage
+            $Text += "`n{0}" -f (($Log.ExecInfo.InvocationInfo.PositionMessage -split "`r`n" | %{"{0}" -f $_} )[1..2]  -join "`n")
+            $Text += "`n  +`tCategoryInfo          : {0}" -f $Log.ExecInfo.CategoryInfo.ToString()
+            $Text += "`n  +`tFullyQualifiedErrorId : {0}" -f $Log.ExecInfo.FullyQualifiedErrorId
+            $Text += "`n{0}" -f (($Log.ExecInfo.ScriptStackTrace -split "`r`n" | %{"    +`t{0}" -f $_}) -join "`n")
         }
 
         $Params = @{
