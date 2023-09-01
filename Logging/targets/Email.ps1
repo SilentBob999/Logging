@@ -23,11 +23,11 @@
 
         if (![String]::IsNullOrWhiteSpace($Log.ExecInfo) -and $Configuration.PrintException) {
             $ExceptionFormat = "{0}`n" +
-                               "{1}`n" +
-                               "+     CategoryInfo          : {2}`n" +
-                               "+     FullyQualifiedErrorId : {3}`n" +
-                               "+     Details message       : {6}`n" +
-                               "+     RecommendedAction     : {7}`n" +
+                               "{1}`r`n" +
+                               "+     CategoryInfo          : {2}`r`n" +
+                               "+     FullyQualifiedErrorId : {3}`r`n" +
+                               "+     Details message       : {6}`r`n" +
+                               "+     RecommendedAction     : {7}`r`n" +
                                "`n`n" +
                                "ScriptStackTrace :`n" +
                                "{4}"+
