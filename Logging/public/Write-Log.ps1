@@ -71,7 +71,8 @@ Function Write-Log {
         [Parameter(Mandatory = $false)]
         [alias('bscope')]
         [int]$BumpCallerScope=0,
-        [System.ConsoleColor]$ForegroundColor
+        [System.ConsoleColor]$ForegroundColor,
+        [System.ConsoleColor]$BackgroundColor
     )
 
     DynamicParam {
@@ -118,6 +119,7 @@ Function Write-Log {
             pid          = $PID
             args         = $Arguments
             ForegroundColor = $ForegroundColor
+            BackgroundColor = $BackgroundColor
         }
 
         #This variable is initiated via Start-LoggingManager
