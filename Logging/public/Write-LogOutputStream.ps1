@@ -80,7 +80,6 @@ Function Write-LogOutputStream {
                 } else {
                     Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor $i.MessageData.ForegroundColor
                 }
-
             } elseif ( ($i -is [System.Management.Automation.DebugRecord]) ) {
                 Write-LogCustom -Message $i -Level DEBUG -BumpCallerScope 1 -Verbose:$VerbosePreference
             } elseif ( ($i -is [System.Management.Automation.ErrorRecord]) ) {
@@ -94,7 +93,6 @@ Function Write-LogOutputStream {
                     } else{
                         Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor -Verbose:$VerbosePreference
                     }
-
                 } else {
                     Wait-Logging
                     if ($null -eq $i.MessageData.ForegroundColor) {

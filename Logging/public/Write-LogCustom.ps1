@@ -7,7 +7,7 @@ This function differ from Write-Log as it determine a Unique Event ID for each e
 All the event ID are save to LoggingConfigEventID.xml
 
 .PARAMETER Message
-Test to display
+Test to display.  The message is facultative if an exception is given to ExceptionInfo.
 
 .PARAMETER Arguments
 ? Directly pass to Write-Log (module Logging). Refer to the module doc.
@@ -57,10 +57,14 @@ Function Write-LogCustom {
             Mandatory = $false)]
         [System.ConsoleColor]$BackgroundColor
     )
-    $BumpCallerScope = $BumpCallerScope + 1
+    $BumpCallerScope = $BumpCallerScope + 1 # Write-LogCustom his one more step away from Write-Log
 
     $Params = @{
        Body = @{ EventId = 0 }
+    }
+    if (-Not $ExceptionInfo -and -Not $Message) {
+        # ignore if no message and no exception
+        return
     }
     if ($ExceptionInfo) {
         $Params['ExceptionInfo'] = $ExceptionInfo
@@ -91,24 +95,28 @@ Function Write-LogCustom {
     $Info = "[$($File) -> $($invocationInfo.Command)]"
     if ($ExceptionInfo) {
         $EventIdentifierName = "$Info" + "$($ExceptionInfo.Exception.Message)"
-      #  $EventIdentifierName = "$Info" + "$($ExceptionInfo.Exception.GetType().fullname)"
     } elseif ($null -ne $Level -and $Level -notlike "INFO") {
         $EventIdentifierName = "$Info" + "$Level"
     } else { $EventIdentifierName = "$Info" + "OK" }
     ### END REGION ###
 
     ### REGION INITIALIZE ID LIST ###
-    if (-not (Test-Path Variable:Global:EventIdList)) {
-        if (-not (Test-Path Variable:Global:EventIDPath)) {
-            $Global:EventIDPath = Join-Path (Split-Path -Parent (Get-PSCallStack)[$($BumpCallerScope  )].ScriptName) LoggingConfigEventID.xml
+    if (-not (Test-Path Variable:Global:EventIdList )) {
+        if (-not (Test-Path Variable:Global:EventIDPath )) {
+            try {
+                if ($null -ne $BumpCallerScope -and $null -ne (Get-PSCallStack)[$($BumpCallerScope  )].ScriptName ) {
+                     $Global:EventIDPath = Join-Path (Split-Path -Parent (Get-PSCallStack)[$($BumpCallerScope  )].ScriptName) LoggingConfigEventID.xml
+                     Write-Warning "New list of EventID save to $($Global:EventIDPath)`nPlease define the Global Variable 'EventIDPath' to use another path "
+                }  else { <# Caller path not detected - No EvenIdList Found #> }
+            }
+            catch { <# Caller path not detected - No EvenIdList Found #> }
         }
-        if (Test-Path $Global:EventIDPath) {
+        if ( $null -ne $Global:EventIDPath -and (Test-Path $Global:EventIDPath) ) {
             $Global:EventIdList = Import-Clixml -Path $Global:EventIDPath
         } else {
             $Global:EventIdList = @{}
         }
     }
-    Write-Verbose $Global:EventIDPath
     ### END REGION ###
 
     ### REGION GET ID ###
@@ -117,16 +125,28 @@ Function Write-LogCustom {
         #Write-Verbose "Found event ""$($EventIdentifierName)"" with ID $($Global:EventIdList["$EventIdentifierName"])"
     } else {
         ### SUB-REGION Create a new ID ###
-        if ( (($Global:EventIdList).Count -eq 0) ){$id = 10} else {
-           $id = (@($Global:EventIdList.Values  | Sort-Object -Descending)[0]) + 1
+        if ($null -ne $Global:EventIDPath) {
+            if ( (($Global:EventIdList).Count -eq 0) ){
+                $id = 10
+            } else {
+                $id = (@($Global:EventIdList.Values  | Sort-Object -Descending)[0]) + 1
+            }
+            $Global:EventIdList["$EventIdentifierName"] = $id
+            $Global:EventIdList | Export-Clixml -Path $Global:EventIDPath
+        } else {
+            # All event save with ID 9 if the EventIdList is volatile
+            $Global:EventIdList["$EventIdentifierName"] = 9
         }
-        $Global:EventIdList["$EventIdentifierName"] = $id
-        $Global:EventIdList | Export-Clixml -Path $Global:EventIDPath
+       
         ### END SUB REGION ###
         $Params['Body'] = @{ EventId = $Global:EventIdList["$EventIdentifierName"] }
         Write-Verbose "Did not found event ""$($EventIdentifierName)"", give new ID $($Global:EventIdList["$EventIdentifierName"])"
     }
     ### END REGION ###
+
+    try {
+        Write-Debug ("{0};  Selected:{1} _ {2}`nPSCallStack:`n{3}`nEvent ""$($EventIdentifierName)"", ID $($Global:EventIdList["$EventIdentifierName"])`nEventIDPath: $($Global:EventIDPath)" -f  $EventIdentifierName , ((Get-PSCallStack)[$($BumpCallerScope)] ).Command , ((Get-PSCallStack)[$($BumpCallerScope)] ).ScriptName, (Get-PSCallStack | Select-Object command, ScriptName | Out-String) )
+    } catch {    }
 
     return ( Write-Log @Params )
 }
