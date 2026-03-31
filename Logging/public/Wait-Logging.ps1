@@ -33,7 +33,7 @@ function Wait-Logging {
         forcefully shutdown function after some time.
         #>
         $difference = [datetime]::Now - $start
-        if ($difference.seconds -gt 30) {
+        if ($difference.TotalSeconds -gt 30) {
             Write-Error -Message ("{0} :: Wait timeout." -f $MyInvocation.MyCommand) -ErrorAction SilentlyContinue
             break;
         }

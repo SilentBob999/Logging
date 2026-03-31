@@ -68,44 +68,58 @@ Function Write-LogOutputStream {
    #     [Parameter(ParameterSetName='LogHost')]
         [switch]$LogHost,
       #  [Parameter(ParameterSetName='NotLogHost')]
-        [System.ConsoleColor]$ForegroundColor = $host.UI.RawUI.ForegroundColor,
-        [System.ConsoleColor]$BackgroundColor = $host.UI.RawUI.BackgroundColor
+        [System.ConsoleColor]$ForegroundColor,
+        [System.ConsoleColor]$BackgroundColor
     )
+
+    begin {
+        if ($null -eq $ForegroundColor -and $null -ne $host.UI.RawUI.ForegroundColor ) {
+            $ForegroundColor = $host.UI.RawUI.ForegroundColor
+        }
+        if ($null -eq $BackgroundColor -and $null -ne $host.UI.RawUI.BackgroundColor ) {
+            $BackgroundColor = $host.UI.RawUI.BackgroundColor
+        }
+
+    }
     process {
-        $i = $input
-        foreach ($i in $input) {
-            if ( ($i -is [System.Management.Automation.VerboseRecord]) ) {
-                if ($null -eq $i.MessageData.ForegroundColor) {
-                    Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor Cyan
-                } else {
-                    Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor $i.MessageData.ForegroundColor
-                }
-            } elseif ( ($i -is [System.Management.Automation.DebugRecord]) ) {
-                Write-LogCustom -Message $i -Level DEBUG -BumpCallerScope 1 -Verbose:$VerbosePreference
-            } elseif ( ($i -is [System.Management.Automation.ErrorRecord]) ) {
-                Write-LogCustom -Message $i -ExceptionInfo $i -Level ERROR -BumpCallerScope 1 -Verbose:$VerbosePreference
-            } elseif ( ($i -is [System.Management.Automation.WarningRecord]) ) {
-                Write-LogCustom -Message $i -Level WARNING -BumpCallerScope 1
-            } elseif ( ($i -is [System.Management.Automation.InformationRecord]) -or ($i -is [System.String]) ) {
-                if ($LogHost) {
+        # $i = $input
+        foreach ($i in @($input)) {
+            if ($null -ne $i -and "" -ne "$($i)") {
+                if ( ($i -is [System.Management.Automation.VerboseRecord]) ) {
                     if ($null -eq $i.MessageData.ForegroundColor) {
-                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor -Verbose:$VerbosePreference
-                    } else{
-                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor -Verbose:$VerbosePreference
+                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor Cyan
+                    } else {
+                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor $i.MessageData.ForegroundColor
+                    }
+                } elseif ( ($i -is [System.Management.Automation.DebugRecord]) ) {
+                    Write-LogCustom -Message $i -Level DEBUG -BumpCallerScope 1 -Verbose:$VerbosePreference
+                } elseif ( ($i -is [System.Management.Automation.ErrorRecord]) ) {
+                    Write-LogCustom -Message $i -ExceptionInfo $i -Level ERROR -BumpCallerScope 1 -Verbose:$VerbosePreference
+                } elseif ( ($i -is [System.Management.Automation.WarningRecord]) ) {
+                    Write-LogCustom -Message $i -Level WARNING -BumpCallerScope 1
+                } elseif ( ($i -is [System.Management.Automation.InformationRecord]) -or ($i -is [System.String]) ) {
+                    if ($LogHost) {
+                        if ($null -eq $i.MessageData.ForegroundColor) {
+                            Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor -Verbose:$VerbosePreference
+                        } else{
+                            Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor -Verbose:$VerbosePreference
+                        }
+                    } else {
+                        Wait-Logging
+                        if ($null -eq $i.MessageData.ForegroundColor) {
+                            Write-Host -Object $i -ForegroundColor  $ForegroundColor -BackgroundColor $BackgroundColor
+                        } else {
+                            Write-Host -Object $i -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor
+                        }
                     }
                 } else {
                     Wait-Logging
-                    if ($null -eq $i.MessageData.ForegroundColor) {
-                        Write-Host -Object $i -ForegroundColor  $ForegroundColor -BackgroundColor $BackgroundColor
-                    } else {
-                        Write-Host -Object $i -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor
-                    }
+                    Write-Output $i
                 }
-            } else {
-                Wait-Logging
-                Write-Output $i
             }
        }
-       Wait-Logging
+    }
+    end {
+        Wait-Logging
     }
 }
