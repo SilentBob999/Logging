@@ -67,7 +67,7 @@ Function Write-Log {
         [Parameter(Position = 2,
             ParameterSetName='ExceptionOnly',
             Mandatory = $true)]
-        [System.Management.Automation.ErrorRecord] $ExceptionInfo = $null,
+        [System.Management.Automation.ErrorRecord]$ExceptionInfo = $null,
         [Parameter(Mandatory = $false)]
         [alias('bscope')]
         [int]$BumpCallerScope=0,

@@ -112,27 +112,48 @@ Function Write-LogCustom {
             catch { <# Caller path not detected - No EvenIdList Found #> }
         }
         if ( $null -ne $Global:EventIDPath -and (Test-Path $Global:EventIDPath) ) {
-            $Global:EventIdList = Import-Clixml -Path $Global:EventIDPath
+            $data = Import-Clixml -Path $Global:EventIDPath
+            $Global:EventIdList = [hashtable]::Synchronized($data)
         } else {
-            $Global:EventIdList = @{}
+            $Global:EventIdList = [hashtable]::Synchronized(@{})
         }
     }
     ### END REGION ###
 
     ### REGION GET ID ###
-    if ($Global:EventIdList["$EventIdentifierName"]){
-        $Params['Body'] = @{ EventId = $Global:EventIdList["$EventIdentifierName"] }
-        #Write-Verbose "Found event ""$($EventIdentifierName)"" with ID $($Global:EventIdList["$EventIdentifierName"])"
+    $currentId = $Global:EventIdList["$EventIdentifierName"]
+    if ($null -ne $currentId) {
+        $Params['Body'] = @{ EventId = $currentId }
     } else {
         ### SUB-REGION Create a new ID ###
         if ($null -ne $Global:EventIDPath) {
-            if ( (($Global:EventIdList).Count -eq 0) ){
-                $id = 10
-            } else {
-                $id = (@($Global:EventIdList.Values  | Sort-Object -Descending)[0]) + 1
+            # On définit l'objet de verrouillage
+            $lockObj = $Global:EventIdList.SyncRoot
+            $lockTaken = $false
+            
+            try {
+                # On tente de prendre le verrou
+                [System.Threading.Monitor]::Enter($lockObj, [ref]$lockTaken)
+
+                # Double vérification à l'intérieur du verrou
+                if (-not $Global:EventIdList.ContainsKey("$EventIdentifierName")) {
+                    if ($Global:EventIdList.Count -eq 0) {
+                        $id = 10
+                    } else {
+                        # Calcul de l'ID suivant
+                        $id = ($Global:EventIdList.Values | Sort-Object -Descending | Select-Object -First 1) + 1
+                    }
+                    
+                    $Global:EventIdList["$EventIdentifierName"] = $id
+                    $Global:EventIdList | Export-Clixml -Path $Global:EventIDPath
+                }
             }
-            $Global:EventIdList["$EventIdentifierName"] = $id
-            $Global:EventIdList | Export-Clixml -Path $Global:EventIDPath
+            finally {
+                # IMPORTANT : On libère TOUJOURS le verrou, même en cas d'erreur
+                if ($lockTaken) {
+                    [System.Threading.Monitor]::Exit($lockObj)
+                }
+            }
         } else {
             # All event save with ID 9 if the EventIdList is volatile
             $Global:EventIdList["$EventIdentifierName"] = 9
