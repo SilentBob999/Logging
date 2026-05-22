@@ -97,7 +97,7 @@
             # (opt) compress old files
             if (-not [string]::IsNullOrWhiteSpace($Configuration.CompressionPath)){
                 try{
-                    Add-Type -As System.IO.Compression.FileSystem
+                    [void] [System.Reflection.Assembly]::LoadWithPartialName("System.IO.Compression.FileSystem")
                 }catch{
                     $ParentHost.UI.WriteErrorLine("ERROR: You need atleast .Net 4.5 for the compression feature.")
                     return

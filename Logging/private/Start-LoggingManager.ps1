@@ -8,47 +8,52 @@ function Start-LoggingManager {
     New-Variable -Name LoggingRunspace      -Scope Script -Option ReadOnly -Value ([hashtable]::Synchronized(@{ }))
     New-Variable -Name TargetsInitSync      -Scope Script -Option ReadOnly -Value ([System.Threading.ManualResetEventSlim]::new($false))
 
-    $Script:InitialSessionState = [initialsessionstate]::CreateDefault()
+    # 1. Création d'un état par défaut ISOLÉ du processus hôte actuel (Bloque les hooks de MC2Tools)
+    $Script:InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault2()
 
     if ($Script:InitialSessionState.psobject.Properties['ApartmentState']) {
         $Script:InitialSessionState.ApartmentState = [System.Threading.ApartmentState]::MTA
     }
 
-    # Importing variables into runspace
-    foreach ($sessionVariable in 'ScriptRoot', 'LevelNames', 'Logging', 'LoggingEventQueue', 'TargetsInitSync') {
-        $Value = Get-Variable -Name $sessionVariable -ErrorAction Continue -ValueOnly
-        Write-Verbose "Importing variable $sessionVariable`: $Value into runspace"
-        $v = New-Object System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList $sessionVariable, $Value, '', ([System.Management.Automation.ScopedItemOptions]::AllScope)
-        $Script:InitialSessionState.Variables.Add($v)
-    }
-
-    # Importing functions into runspace
+    # 2. Importation des fonctions sous forme de texte brut
     foreach ($Function in 'Format-Pattern', 'Initialize-LoggingTarget', 'Get-LevelNumber') {
         Write-Verbose "Importing function $($Function) into runspace"
-        $Body = Get-Content Function:\$Function
+        $FuncCmd = Get-Command -Name $Function -CommandType Function -ErrorAction Stop
+        $Body = $FuncCmd.ScriptBlock.ToString()
         $f = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList $Function, $Body
         $Script:InitialSessionState.Commands.Add($f)
     }
 
-    #Setup runspace
+    # 3. Initialisation et ouverture du Runspace isolé
     $Script:LoggingRunspace.Runspace = [runspacefactory]::CreateRunspace($Script:InitialSessionState)
     $Script:LoggingRunspace.Runspace.Name = 'LoggingQueueConsumer'
     $Script:LoggingRunspace.Runspace.Open()
-    $Script:LoggingRunspace.Runspace.SessionStateProxy.SetVariable('ParentHost', $Host)
-    $Script:LoggingRunspace.Runspace.SessionStateProxy.SetVariable('VerbosePreference', $VerbosePreference)
 
-    # Spawn Logging Consumer
+    # 4. Injection directe des variables de module via le Proxy (Évite la sérialisation lourde pré-ouverture)
+    Write-Verbose "Injecting live module variables via SessionStateProxy..."
+    $Proxy = $Script:LoggingRunspace.Runspace.SessionStateProxy
+    
+    $Proxy.SetVariable('ScriptRoot',          (Get-Variable -Name 'ScriptRoot' -Scope Script -ValueOnly))
+    $Proxy.SetVariable('LevelNames',          (Get-Variable -Name 'LevelNames' -Scope Script -ValueOnly))
+    $Proxy.SetVariable('Logging',             (Get-Variable -Name 'Logging' -Scope Script -ValueOnly))
+    $Proxy.SetVariable('LoggingEventQueue',    (Get-Variable -Name 'LoggingEventQueue' -Scope Script -ValueOnly))
+    $Proxy.SetVariable('TargetsInitSync',     (Get-Variable -Name 'TargetsInitSync' -Scope Script -ValueOnly))
+    
+    # Références pour l'hôte et l'affichage des verbeux
+    $Proxy.SetVariable('ParentHost', $Host)
+    $Proxy.SetVariable('VerbosePreference', $VerbosePreference)
+
+    # 5. Définition du consommateur de la file d'attente (Scriptblock d'arrière-plan)
     $Consumer = {
         Initialize-LoggingTarget
 
-        $TargetsInitSync.Set(); # Signal to the parent runspace that logging targets have been loaded
+        $TargetsInitSync.Set(); # Signale au runspace parent que l'initialisation est un succès
 
         foreach ($Log in $Script:LoggingEventQueue.GetConsumingEnumerable()) {
             if ($Script:Logging.EnabledTargets) {
                 $ParentHost.NotifyBeginApplication()
 
                 try {
-                    #Enumerating through a collection is intrinsically not a thread-safe procedure
                     for ($targetEnum = $Script:Logging.EnabledTargets.GetEnumerator(); $targetEnum.MoveNext(); ) {
                         [string] $LoggingTarget = $targetEnum.Current.key
                         [hashtable] $TargetConfiguration = $targetEnum.Current.Value
@@ -71,6 +76,7 @@ function Start-LoggingManager {
         }
     }
 
+    # 6. Exécution asynchrone du traitement de log
     $Script:LoggingRunspace.Powershell = [Powershell]::Create().AddScript($Consumer, $true)
     $Script:LoggingRunspace.Powershell.Runspace = $Script:LoggingRunspace.Runspace
     $Script:LoggingRunspace.Handle = $Script:LoggingRunspace.Powershell.BeginInvoke()
@@ -89,14 +95,13 @@ function Start-LoggingManager {
         [System.GC]::Collect()
     }
 
-    # This scriptblock would be called within the module scope
     $ExecutionContext.SessionState.Module.OnRemove += $OnRemoval
-
-    # This scriptblock would be called within the global scope and wouldn't have access to internal module variables and functions that we need
     $Script:LoggingRunspace.EngineEventJob = Register-EngineEvent -SourceIdentifier ([System.Management.Automation.PsEngineEvent]::Exiting) -Action $OnRemoval
     #endregion Handle Module Removal
 
+    # 7. Attente de la confirmation de démarrage (Ne devrait plus expirer)
     if(-not $TargetsInitSync.Wait($ConsumerStartupTimeout)){
         throw 'Timed out while waiting for logging consumer to start up'
     }
+    Write-Verbose "Start-LoggingManager completed"
 }
