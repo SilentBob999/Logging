@@ -83,21 +83,42 @@ function Start-LoggingManager {
 
     #region Handle Module Removal
     $OnRemoval = {
-        $Module = Get-Module Logging
+        # 1. On retire immédiatement l'action pour éviter toute récursion
+        $ExecutionContext.SessionState.Module.OnRemove -= $OnRemoval
 
+        $Module = Get-Module Logging
         if ($Module) {
             $Module.Invoke({
-                Wait-Logging
-                Stop-LoggingManager
+                # 2. On s'assure que les derniers messages quittent la file d'attente
+                if ($Script:LoggingEventQueue -and $Script:LoggingEventQueue.Count -gt 0) {
+                    Wait-Logging
+                }
+                
+                # 3. Fermeture sécuritaire des structures .NET sans passer par Stop-LoggingManager
+                # afin d'éviter le blocage de .EndInvoke() sous Server 2012 R2
+                if ($Script:LoggingEventQueue) { 
+                    $Script:LoggingEventQueue.CompleteAdding()
+                    $Script:LoggingEventQueue.Dispose() 
+                }
+                if ($Script:LoggingRunspace.Powershell) { 
+                    $Script:LoggingRunspace.Powershell.Dispose() 
+                }
             })
         }
 
+        # 4. Nettoyage forcé des variables de script
+        Remove-Variable -Scope Script -Force -Name LoggingEventQueue -ErrorAction SilentlyContinue
+        Remove-Variable -Scope Script -Force -Name LoggingRunspace -ErrorAction SilentlyContinue
+        
         [System.GC]::Collect()
     }
 
+    # On s'accroche UNIQUEMENT au retrait du module, on supprime Register-EngineEvent
     $ExecutionContext.SessionState.Module.OnRemove += $OnRemoval
-    $Script:LoggingRunspace.EngineEventJob = Register-EngineEvent -SourceIdentifier ([System.Management.Automation.PsEngineEvent]::Exiting) -Action $OnRemoval
+    # --- LA LIGNE Register-EngineEvent A ÉTÉ SUPPRIMÉE ICI ---
     #endregion Handle Module Removal
+
+    
 
     # 7. Attente de la confirmation de démarrage (Ne devrait plus expirer)
     if(-not $TargetsInitSync.Wait($ConsumerStartupTimeout)){
