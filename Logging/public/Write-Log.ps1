@@ -88,7 +88,12 @@ Function Write-Log {
         [string] $messageText = $Message
 
         if ($PSBoundParameters.ContainsKey('Arguments')) {
-            $messageText = $messageText -f $Arguments
+            try {
+                $messageText = $messageText -f $Arguments
+            }
+            catch {
+                Write-Warning "Write-Log: Message formatting failed. Using unformatted message."
+            }
         }
         if ($messageText.Length -gt 30000) {
             $messageText = $messageText.subString(0, [System.Math]::Min(30000, $messageText.Length)) + "`n(truncated)"
