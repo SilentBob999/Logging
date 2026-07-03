@@ -61,7 +61,7 @@ https://devblogs.microsoft.com/scripting/understanding-streams-redirection-and-w
 #>
 
 Function Write-LogOutputStream {
-    [CmdletBinding(DefaultParameterSetName='ToHost')]
+    [CmdletBinding(DefaultParameterSetName='ToLog')]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [AllowNull()]
@@ -69,9 +69,9 @@ Function Write-LogOutputStream {
         $InputObject,
         [Parameter(ParameterSetName='ToLog')]
         [switch]$LogHost,
-        [Parameter(ParameterSetName='ToHost')]
+        [Parameter(ParameterSetName='ToLog')]
         [System.ConsoleColor]$ForegroundColor,
-        [Parameter(ParameterSetName='ToHost')]
+        [Parameter(ParameterSetName='ToLog')]
         [System.ConsoleColor]$BackgroundColor
     )
 
