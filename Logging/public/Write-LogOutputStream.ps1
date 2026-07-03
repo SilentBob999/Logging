@@ -121,14 +121,18 @@ Function Write-LogOutputStream {
                     $hasMsgColors = ($null -ne $i.MessageData -and $i.MessageData -is [System.Management.Automation.HostInformationMessage] -and $null -ne $i.MessageData.ForegroundColor)
                     if ($LogHost) {
                         if ($hasMsgColors) {
-                            Write-LogCustom -Message "$($i.MessageData)" -Level INFO -BumpCallerScope 1 -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor
+                            $logParams = @{ Message = $i.MessageData.Message; Level = 'INFO'; BumpCallerScope = 1; ForegroundColor = $i.MessageData.ForegroundColor }
+                            if ($null -ne $i.MessageData.BackgroundColor) { $logParams['BackgroundColor'] = $i.MessageData.BackgroundColor }
+                            Write-LogCustom @logParams
                         } else {
                             Write-LogCustom -Message "$i" -Level INFO -BumpCallerScope 1 -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
                         }
                     } else {
                         Wait-Logging
                         if ($hasMsgColors) {
-                            Write-Host -Object $i.MessageData -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor
+                            $hostParams = @{ Object = $i.MessageData.Message; ForegroundColor = $i.MessageData.ForegroundColor }
+                            if ($null -ne $i.MessageData.BackgroundColor) { $hostParams['BackgroundColor'] = $i.MessageData.BackgroundColor }
+                            Write-Host @hostParams
                         } else {
                             Write-Host -Object $i -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
                         }
