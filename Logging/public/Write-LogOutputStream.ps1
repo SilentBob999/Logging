@@ -65,6 +65,7 @@ Function Write-LogOutputStream {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [AllowNull()]
+        [Alias('input')]
         $InputObject,
         [Parameter(ParameterSetName='ToLog')]
         [switch]$LogHost,
