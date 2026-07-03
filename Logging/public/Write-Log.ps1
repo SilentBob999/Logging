@@ -92,7 +92,7 @@ Function Write-Log {
                 $messageText = $messageText -f $Arguments
             }
             catch {
-                Write-Warning "Write-Log: Message formatting failed. Using unformatted message."
+                Write-Warning "Write-Log: Message formatting failed. Using unformatted message. Error: $($_.Exception.Message)"
             }
         }
         if ($messageText.Length -gt 30000) {
