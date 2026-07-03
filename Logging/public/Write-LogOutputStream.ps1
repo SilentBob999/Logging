@@ -77,18 +77,24 @@ Function Write-LogOutputStream {
 
     begin {
         if (-not $PSBoundParameters.ContainsKey('ForegroundColor')) {
-            if ($null -ne $host.UI -and $null -ne $host.UI.RawUI) {
-                try { $ForegroundColor = $host.UI.RawUI.ForegroundColor }
-                catch { $ForegroundColor = [System.ConsoleColor]::White }
-            } else {
+            try {
+                if ($null -ne $host.UI -and $null -ne $host.UI.RawUI) {
+                    $ForegroundColor = $host.UI.RawUI.ForegroundColor
+                } else {
+                    $ForegroundColor = [System.ConsoleColor]::White
+                }
+            } catch {
                 $ForegroundColor = [System.ConsoleColor]::White
             }
         }
         if (-not $PSBoundParameters.ContainsKey('BackgroundColor')) {
-            if ($null -ne $host.UI -and $null -ne $host.UI.RawUI) {
-                try { $BackgroundColor = $host.UI.RawUI.BackgroundColor }
-                catch { $BackgroundColor = [System.ConsoleColor]::Black }
-            } else {
+            try {
+                if ($null -ne $host.UI -and $null -ne $host.UI.RawUI) {
+                    $BackgroundColor = $host.UI.RawUI.BackgroundColor
+                } else {
+                    $BackgroundColor = [System.ConsoleColor]::Black
+                }
+            } catch {
                 $BackgroundColor = [System.ConsoleColor]::Black
             }
         }
