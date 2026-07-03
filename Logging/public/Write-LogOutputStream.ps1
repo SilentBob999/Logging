@@ -13,7 +13,7 @@ Log all Verbose or Debug to eventlog.
 Log Error to event log without using try/catch when ErrorAction is set to continu.
 Etc...
 
-.PARAMETER input
+.PARAMETER InputObject
 Anything pass from the pipeline.
 
 To redirect all the output of your script to the input of this function, use it this way :
@@ -61,61 +61,96 @@ https://devblogs.microsoft.com/scripting/understanding-streams-redirection-and-w
 #>
 
 Function Write-LogOutputStream {
-    [CmdletBinding(DefaultParameterSetName='NONE')]
+    [CmdletBinding(DefaultParameterSetName='ToLog')]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        $input,
-   #     [Parameter(ParameterSetName='LogHost')]
+        [AllowNull()]
+        [Alias('input')]
+        $InputObject,
+        [Parameter(ParameterSetName='ToLog')]
         [switch]$LogHost,
-      #  [Parameter(ParameterSetName='NotLogHost')]
+        [Parameter(ParameterSetName='ToLog')]
         [System.ConsoleColor]$ForegroundColor,
+        [Parameter(ParameterSetName='ToLog')]
         [System.ConsoleColor]$BackgroundColor
     )
 
     begin {
-        if ($null -eq $ForegroundColor -and $null -ne $host.UI.RawUI.ForegroundColor ) {
-            $ForegroundColor = $host.UI.RawUI.ForegroundColor
+        if (-not $PSBoundParameters.ContainsKey('ForegroundColor')) {
+            try {
+                if ($null -ne $host.UI -and $null -ne $host.UI.RawUI) {
+                    $ForegroundColor = $host.UI.RawUI.ForegroundColor
+                } else {
+                    $ForegroundColor = [System.ConsoleColor]::White
+                }
+            } catch {
+                $ForegroundColor = [System.ConsoleColor]::White
+            }
         }
-        if ($null -eq $BackgroundColor -and $null -ne $host.UI.RawUI.BackgroundColor ) {
-            $BackgroundColor = $host.UI.RawUI.BackgroundColor
+        if (-not $PSBoundParameters.ContainsKey('BackgroundColor')) {
+            try {
+                if ($null -ne $host.UI -and $null -ne $host.UI.RawUI) {
+                    $BackgroundColor = $host.UI.RawUI.BackgroundColor
+                } else {
+                    $BackgroundColor = [System.ConsoleColor]::Black
+                }
+            } catch {
+                $BackgroundColor = [System.ConsoleColor]::Black
+            }
         }
-
     }
     process {
-        # $i = $input
-        foreach ($i in @($input)) {
-            if ($null -ne $i -and "" -ne "$($i)") {
-                if ( ($i -is [System.Management.Automation.VerboseRecord]) ) {
-                    if ($null -eq $i.MessageData.ForegroundColor) {
-                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor Cyan
-                    } else {
-                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -Verbose:$VerbosePreference -ForegroundColor $i.MessageData.ForegroundColor
-                    }
-                } elseif ( ($i -is [System.Management.Automation.DebugRecord]) ) {
-                    Write-LogCustom -Message $i -Level DEBUG -BumpCallerScope 1 -Verbose:$VerbosePreference
-                } elseif ( ($i -is [System.Management.Automation.ErrorRecord]) ) {
-                    Write-LogCustom -Message $i -ExceptionInfo $i -Level ERROR -BumpCallerScope 1 -Verbose:$VerbosePreference
-                } elseif ( ($i -is [System.Management.Automation.WarningRecord]) ) {
-                    Write-LogCustom -Message $i -Level WARNING -BumpCallerScope 1
-                } elseif ( ($i -is [System.Management.Automation.InformationRecord]) -or ($i -is [System.String]) ) {
+        foreach ($i in @($InputObject)) {
+            if ($null -eq $i) { continue }
+            if ([string]::IsNullOrEmpty("$i")) { continue }
+
+            try {
+                if ($i -is [System.Management.Automation.VerboseRecord]) {
+                    $foreColor = if ($null -ne $i.MessageData -and $i.MessageData -is [System.Management.Automation.HostInformationMessage] -and $null -ne $i.MessageData.ForegroundColor) {
+                        $i.MessageData.ForegroundColor
+                    } else { [System.ConsoleColor]::Cyan }
+                    Write-LogCustom -Message "$i" -Level INFO -BumpCallerScope 1 -ForegroundColor $foreColor
+                } elseif ($i -is [System.Management.Automation.DebugRecord]) {
+                    Write-LogCustom -Message "$i" -Level DEBUG -BumpCallerScope 1
+                } elseif ($i -is [System.Management.Automation.ErrorRecord]) {
+                    Write-LogCustom -Message "$i" -ExceptionInfo $i -Level ERROR -BumpCallerScope 1
+                } elseif ($i -is [System.Management.Automation.WarningRecord]) {
+                    Write-LogCustom -Message "$i" -Level WARNING -BumpCallerScope 1
+                } elseif ($i -is [System.Management.Automation.InformationRecord]) {
+                    # Safely extract color info from MessageData if available
+                    $hasMsgColors = ($null -ne $i.MessageData -and $i.MessageData -is [System.Management.Automation.HostInformationMessage] -and $null -ne $i.MessageData.ForegroundColor)
                     if ($LogHost) {
-                        if ($null -eq $i.MessageData.ForegroundColor) {
-                            Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor -Verbose:$VerbosePreference
-                        } else{
-                            Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor -Verbose:$VerbosePreference
+                        if ($hasMsgColors) {
+                            $logParams = @{ Message = $i.MessageData.Message; Level = 'INFO'; BumpCallerScope = 1; ForegroundColor = $i.MessageData.ForegroundColor }
+                            if ($null -ne $i.MessageData.BackgroundColor) { $logParams['BackgroundColor'] = $i.MessageData.BackgroundColor }
+                            Write-LogCustom @logParams
+                        } else {
+                            Write-LogCustom -Message "$i" -Level INFO -BumpCallerScope 1 -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
                         }
                     } else {
                         Wait-Logging
-                        if ($null -eq $i.MessageData.ForegroundColor) {
-                            Write-Host -Object $i -ForegroundColor  $ForegroundColor -BackgroundColor $BackgroundColor
+                        if ($hasMsgColors) {
+                            $hostParams = @{ Object = $i.MessageData.Message; ForegroundColor = $i.MessageData.ForegroundColor }
+                            if ($null -ne $i.MessageData.BackgroundColor) { $hostParams['BackgroundColor'] = $i.MessageData.BackgroundColor }
+                            Write-Host @hostParams
                         } else {
-                            Write-Host -Object $i -ForegroundColor $i.MessageData.ForegroundColor -BackgroundColor $i.MessageData.BackgroundColor
+                            Write-Host -Object $i -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
                         }
+                    }
+                } elseif ($i -is [System.String]) {
+                    if ($LogHost) {
+                        Write-LogCustom -Message $i -Level INFO -BumpCallerScope 1 -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
+                    } else {
+                        Wait-Logging
+                        Write-Host -Object $i -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
                     }
                 } else {
                     Wait-Logging
                     Write-Output $i
                 }
+            }
+            catch {
+                Write-Warning "Write-LogOutputStream: Error processing pipeline item: $_"
             }
        }
     }

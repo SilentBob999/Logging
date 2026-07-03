@@ -37,23 +37,23 @@ Function Write-LogCustom {
         Mandatory = $false)]
         [alias('arg')]
         [array] $Arguments,
-        [Parameter(Position = 4,
+        [Parameter(Position = 3,
             Mandatory = $false)]
         [ValidateSet('ERROR','WARNING','INFO','DEBUG')]
         [alias('lev')]
         [string]$Level,
-        [Parameter(Position = 5,
+        [Parameter(Position = 4,
             Mandatory = $false)]
         [alias('err')]
         [System.Management.Automation.ErrorRecord]$ExceptionInfo,
-        [Parameter(Position = 6,
+        [Parameter(Position = 5,
             Mandatory = $false)]
         [alias('bscope')]
         [int]$BumpCallerScope=0,
-        [Parameter(Position = 7,
+        [Parameter(Position = 6,
             Mandatory = $false)]
         [System.ConsoleColor]$ForegroundColor,
-        [Parameter(Position = 8,
+        [Parameter(Position = 7,
             Mandatory = $false)]
         [System.ConsoleColor]$BackgroundColor
     )
@@ -95,7 +95,7 @@ Function Write-LogCustom {
     $Info = "[$($File) -> $($invocationInfo.Command)]"
     if ($ExceptionInfo) {
         $EventIdentifierName = "$Info" + "$($ExceptionInfo.Exception.Message)"
-    } elseif ($null -ne $Level -and $Level -notlike "INFO") {
+    } elseif ($null -ne $Level -and $Level -ne "INFO") {
         $EventIdentifierName = "$Info" + "$Level"
     } else { $EventIdentifierName = "$Info" + "OK" }
     ### END REGION ###
@@ -109,11 +109,19 @@ Function Write-LogCustom {
                      Write-Warning "New list of EventID save to $($Global:EventIDPath)`nPlease define the Global Variable 'EventIDPath' to use another path "
                 }  else { <# Caller path not detected - No EvenIdList Found #> }
             }
-            catch { <# Caller path not detected - No EvenIdList Found #> }
+            catch {
+                Write-Warning "Failed to determine EventIDPath: $_"
+            }
         }
         if ( $null -ne $Global:EventIDPath -and (Test-Path $Global:EventIDPath) ) {
-            $data = Import-Clixml -Path $Global:EventIDPath
-            $Global:EventIdList = [hashtable]::Synchronized($data)
+            try {
+                $data = Import-Clixml -Path $Global:EventIDPath -ErrorAction Stop
+                $Global:EventIdList = [hashtable]::Synchronized($data)
+            }
+            catch {
+                Write-Warning "Failed to load EventID list from $($Global:EventIDPath): $_. Creating new list."
+                $Global:EventIdList = [hashtable]::Synchronized(@{})
+            }
         } else {
             $Global:EventIdList = [hashtable]::Synchronized(@{})
         }
@@ -145,7 +153,12 @@ Function Write-LogCustom {
                     }
                     
                     $Global:EventIdList["$EventIdentifierName"] = $id
-                    $Global:EventIdList | Export-Clixml -Path $Global:EventIDPath
+                    try {
+                        $Global:EventIdList | Export-Clixml -Path $Global:EventIDPath -ErrorAction Stop
+                    }
+                    catch {
+                        Write-Warning "Failed to save EventID list to $($Global:EventIDPath): $_. EventID will be volatile for this session."
+                    }
                 }
             }
             finally {
